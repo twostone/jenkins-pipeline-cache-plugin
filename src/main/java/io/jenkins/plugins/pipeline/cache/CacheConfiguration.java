@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import hudson.Extension;
@@ -21,6 +22,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.verb.POST;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 
@@ -137,13 +139,26 @@ public class CacheConfiguration extends GlobalConfiguration implements Serializa
     }
 
     /**
-     * Populates the credentials selector with all stored "username with password" credentials
-     * visible in the current security context.
+     * Populates the credentials selector with stored credentials visible in the current security
+     * context: "username with password" credentials and, when the
+     * <a href="https://github.com/jenkinsci/aws-credentials-plugin">AWS Credentials plugin</a> is
+     * installed, credentials from that plugin.
+     *
+     * <p>
+     * AWS credentials are recognised by the
+     * {@link AwsCredentialsProvider} interface (part of the AWS SDK v2 this plugin already
+     * depends on), which the AWS Credentials plugin exposes on its credentials. The plugin
+     * therefore does not need to be a compile-time or runtime dependency here: recognition is
+     * purely structural and only succeeds when a credential of that kind actually exists.
      */
     public ListBoxModel doFillCredentialsIdItems() {
         StandardListBoxModel result = new StandardListBoxModel();
-        List<? extends StandardUsernamePasswordCredentials> credentials =
-                CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, Jenkins.get());
+        List<? extends StandardCredentials> all =
+                CredentialsProvider.lookupCredentials(StandardCredentials.class, Jenkins.get());
+        List<? extends StandardCredentials> credentials = all.stream()
+                .filter(c -> c instanceof StandardUsernamePasswordCredentials
+                        || c instanceof AwsCredentialsProvider)
+                .collect(java.util.stream.Collectors.toList());
         result.withAll(credentials);
         return result.includeCurrentValue(trimToNull(credentialsId));
     }
@@ -170,25 +185,52 @@ public class CacheConfiguration extends GlobalConfiguration implements Serializa
     }
 
     /**
-     * Looks up a stored credential by id and converts it to resolved credentials.
+     * Looks up a stored credential by id and converts it to resolved credentials. Supported are
+     * "username with password" credentials (username = access key ID, password = secret access
+     * key) and credentials from the
+     * <a href="https://github.com/jenkinsci/aws-credentials-plugin">AWS Credentials plugin</a>,
+     * which are resolved through the credential itself (including STS session tokens).
      *
-     * @throws IllegalStateException if the credential does not exist or is not a "username with password" type
+     * @throws IllegalStateException if the credential does not exist or is of an unsupported type
      */
     static ResolvedCredentials resolveStoredCredentials(String id) {
-        List<? extends StandardUsernamePasswordCredentials> candidates =
-                CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, Jenkins.get());
-        StandardUsernamePasswordCredentials match = null;
-        for (StandardUsernamePasswordCredentials candidate : candidates) {
+        List<? extends StandardCredentials> candidates =
+                CredentialsProvider.lookupCredentials(StandardCredentials.class, Jenkins.get());
+        StandardCredentials match = null;
+        for (StandardCredentials candidate : candidates) {
             if (Objects.equals(candidate.getId(), id)) {
                 match = candidate;
                 break;
             }
         }
         if (match == null) {
-            throw new IllegalStateException("Stored credential '" + id
-                    + "' not found or not a username-with-password credential");
+            throw new IllegalStateException("Stored credential '" + id + "' not found");
         }
-        return new ResolvedCredentials(match.getUsername(), match.getPassword().getPlainText());
+        if (match instanceof StandardUsernamePasswordCredentials c) {
+            return new ResolvedCredentials(c.getUsername(), c.getPassword().getPlainText());
+        }
+        if (match instanceof AwsCredentialsProvider provider) {
+            AwsCredentials awsCreds = provider.resolveCredentials();
+            if (awsCreds == null) {
+                throw new IllegalStateException("Stored credential '" + id
+                        + "' did not yield AWS credentials (are the access key and secret key set?)");
+            }
+            return toResolvedCredentials(awsCreds);
+        }
+        throw new IllegalStateException("Stored credential '" + id
+                + "' is not supported, expected a 'username with password' credential or an AWS credential");
+    }
+
+    /**
+     * Converts SDK v2 credentials (resolved through a credential's {@link AwsCredentialsProvider}
+     * interface) to resolved credentials, preserving an STS session token if present.
+     */
+    private static ResolvedCredentials toResolvedCredentials(AwsCredentials awsCreds) {
+        String sessionToken = null;
+        if (awsCreds instanceof AwsSessionCredentials sessionCreds) {
+            sessionToken = sessionCreds.sessionToken();
+        }
+        return new ResolvedCredentials(awsCreds.accessKeyId(), awsCreds.secretAccessKey(), sessionToken);
     }
 
     /**
@@ -198,12 +240,7 @@ public class CacheConfiguration extends GlobalConfiguration implements Serializa
      */
     private static ResolvedCredentials resolveDefaultChain() {
         try (DefaultCredentialsProvider provider = DefaultCredentialsProvider.create()) {
-            AwsCredentials awsCreds = provider.resolveCredentials();
-            String sessionToken = null;
-            if (awsCreds instanceof AwsSessionCredentials sessionCreds) {
-                sessionToken = sessionCreds.sessionToken();
-            }
-            return new ResolvedCredentials(awsCreds.accessKeyId(), awsCreds.secretAccessKey(), sessionToken);
+            return toResolvedCredentials(provider.resolveCredentials());
         }
     }
 
