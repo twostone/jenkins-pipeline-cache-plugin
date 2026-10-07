@@ -36,10 +36,7 @@ public class CacheBenchmark {
     private static final int MB = 1024 * KB;
 
     @ClassRule
-    public static MinioContainer minio = new MinioContainer();
-
-    @ClassRule
-    public static MinioMcContainer mc = new MinioMcContainer(minio);
+    public static S3MockContainer s3mock = new S3MockContainer();
 
     private String bucket;
     private CacheItemRepository repository;
@@ -47,12 +44,12 @@ public class CacheBenchmark {
     @Before
     public void setUp() {
         bucket = UUID.randomUUID().toString();
-        mc.createBucket(bucket);
+        s3mock.createBucket(bucket);
         repository = new CacheItemRepository(
-                minio.accessKey(),
-                minio.secretKey(),
-                "us-west-1",
-                minio.getExternalAddress(),
+                s3mock.accessKey(),
+                s3mock.secretKey(),
+                "us-east-1",
+                s3mock.getExternalAddress(),
                 bucket);
     }
 
@@ -338,10 +335,10 @@ public class CacheBenchmark {
         for (int count : itemCounts) {
             // Create a fresh bucket for each test
             String b = UUID.randomUUID().toString();
-            mc.createBucket(b);
+            s3mock.createBucket(b);
             CacheItemRepository repo = new CacheItemRepository(
-                    minio.accessKey(), minio.secretKey(),
-                    "us-west-1", minio.getExternalAddress(), b);
+                    s3mock.accessKey(), s3mock.secretKey(),
+                    "us-east-1", s3mock.getExternalAddress(), b);
 
             // Populate
             for (int i = 0; i < count; i++) {
@@ -429,12 +426,12 @@ public class CacheBenchmark {
     private software.amazon.awssdk.services.s3.S3Client createS3Client() {
         return software.amazon.awssdk.services.s3.S3Client.builder()
                 .forcePathStyle(true)
-                .region(software.amazon.awssdk.regions.Region.of("us-west-1"))
-                .endpointOverride(java.net.URI.create(minio.getExternalAddress()))
+                .region(software.amazon.awssdk.regions.Region.of("us-east-1"))
+                .endpointOverride(java.net.URI.create(s3mock.getExternalAddress()))
                 .credentialsProvider(
                         software.amazon.awssdk.auth.credentials.StaticCredentialsProvider.create(
                                 software.amazon.awssdk.auth.credentials.AwsBasicCredentials.create(
-                                        minio.accessKey(), minio.secretKey())))
+                                        s3mock.accessKey(), s3mock.secretKey())))
                 .build();
     }
 
@@ -445,10 +442,10 @@ public class CacheBenchmark {
                         .minimumPartSizeInBytes(partSize)
                         .thresholdInBytes(partSize))
                 .forcePathStyle(true)
-                .region(Region.of("us-west-1"))
-                .endpointOverride(URI.create(minio.getExternalAddress()))
+                .region(Region.of("us-east-1"))
+                .endpointOverride(URI.create(s3mock.getExternalAddress()))
                 .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(minio.accessKey(), minio.secretKey())))
+                        AwsBasicCredentials.create(s3mock.accessKey(), s3mock.secretKey())))
                 .build();
     }
 

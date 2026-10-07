@@ -25,10 +25,7 @@ import static org.hamcrest.Matchers.is;
 public class CacheCleanupTaskTest {
 
     @ClassRule
-    public static MinioContainer minio = new MinioContainer();
-
-    @ClassRule
-    public static MinioMcContainer mc = new MinioMcContainer(minio);
+    public static S3MockContainer s3mock = new S3MockContainer();
 
     @ClassRule
     public static BuildWatcher buildWatcher = new BuildWatcher();
@@ -42,15 +39,15 @@ public class CacheCleanupTaskTest {
     public void setupJenkinsCache() {
         // GIVEN
         bucket = UUID.randomUUID().toString();
-        mc.createBucket(bucket);
+        s3mock.createBucket(bucket);
 
         // GIVEN
         CacheConfiguration config = CacheConfiguration.get();
-        config.setUsername(minio.accessKey());
-        config.setPassword(Secret.fromString(minio.secretKey()));
+        config.setUsername(s3mock.accessKey());
+        config.setPassword(Secret.fromString(s3mock.secretKey()));
         config.setBucket(bucket);
-        config.setRegion("us-west-1");
-        config.setEndpoint(minio.getExternalAddress());
+        config.setRegion("us-east-1");
+        config.setEndpoint(s3mock.getExternalAddress());
     }
 
     @Test
@@ -63,7 +60,7 @@ public class CacheCleanupTaskTest {
         new CacheCleanupTask().execute(StreamTaskListener.fromStdout());
 
         // THEN
-        assertThat(mc.containsKey(bucket, key), is(true));
+        assertThat(s3mock.containsKey(bucket, key), is(true));
     }
 
     @Test
@@ -76,7 +73,7 @@ public class CacheCleanupTaskTest {
         new CacheCleanupTask().execute(StreamTaskListener.fromStdout());
 
         // THEN
-        assertThat(mc.containsKey(bucket, key), is(false));
+        assertThat(s3mock.containsKey(bucket, key), is(false));
     }
 
     /**
@@ -96,7 +93,7 @@ public class CacheCleanupTaskTest {
         new CacheCleanupTask().execute(StreamTaskListener.fromStdout());
 
         // THEN expect the first 6 items are removed
-        assertThat(range(0, 10).filter(i -> mc.containsKey(bucket, keys.get(i))).toArray(), is(new int[]{6, 7, 8, 9}));
+        assertThat(range(0, 10).filter(i -> s3mock.containsKey(bucket, keys.get(i))).toArray(), is(new int[]{6, 7, 8, 9}));
     }
 
     private String createCacheItem(int sizeInMB) {
