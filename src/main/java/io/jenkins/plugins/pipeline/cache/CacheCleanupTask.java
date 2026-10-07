@@ -41,8 +41,7 @@ public class CacheCleanupTask extends AsyncPeriodicWork {
 
         // setup
         try (CacheItemRepository repo = new CacheItemRepository(
-                config.getUsername(),
-                config.getPassword().getPlainText(),
+                config.resolveCredentials(),
                 config.getRegion(),
                 config.getEndpoint(),
                 config.getBucket()

@@ -2,7 +2,6 @@ package io.jenkins.plugins.pipeline.cache.agent;
 
 import hudson.FilePath;
 import hudson.remoting.VirtualChannel;
-import io.jenkins.plugins.pipeline.cache.CacheConfiguration;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
@@ -18,8 +17,8 @@ public class RestoreCallable extends AbstractMasterToAgentS3Callable {
     private final String key;
     private final String[] restoreKeys;
 
-    public RestoreCallable(CacheConfiguration config, String key, String... restoreKeys) {
-        super(config);
+    public RestoreCallable(ResolvedCredentials credentials, String region, String endpoint, String bucket, String key, String... restoreKeys) {
+        super(credentials, region, endpoint, bucket);
         this.key = key;
         this.restoreKeys = restoreKeys;
     }

@@ -5,34 +5,37 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.jenkins.plugins.pipeline.cache.CacheConfiguration;
 import io.jenkins.plugins.pipeline.cache.s3.CacheItemRepository;
 import jenkins.MasterToSlaveFileCallable;
 
 /**
  * Base class for S3 related operations. Note: Plugin code is executed on the master node but the files we want to cache are located on the
  * build agent. In order to process the files on the agent, we use {@link MasterToSlaveFileCallable}.
+ * <p>
+ * Credentials are resolved on the controller and passed as pre-resolved {@link ResolvedCredentials} to agents.
+ * This ensures that only the controller needs access to the default credential provider chain
+ * (e.g. instance role token files, environment variables).
  */
 public abstract class AbstractMasterToAgentS3Callable extends MasterToSlaveFileCallable<AbstractMasterToAgentS3Callable.Result> {
 
-    protected final CacheConfiguration config;
+    private final ResolvedCredentials credentials;
+    private final String region;
+    private final String endpoint;
+    private final String bucket;
     private volatile CacheItemRepository cacheItemRepository;
 
-    protected AbstractMasterToAgentS3Callable(CacheConfiguration config) {
-        this.config = config;
+    protected AbstractMasterToAgentS3Callable(ResolvedCredentials credentials, String region, String endpoint, String bucket) {
+        this.credentials = credentials;
+        this.region = region;
+        this.endpoint = endpoint;
+        this.bucket = bucket;
     }
 
     protected CacheItemRepository cacheItemRepository() {
         if (cacheItemRepository == null) {
             synchronized (this) {
                 if (cacheItemRepository == null) {
-                    cacheItemRepository = new CacheItemRepository(
-                            config.getUsername(),
-                            config.getPassword().getPlainText(),
-                            config.getRegion(),
-                            config.getEndpoint(),
-                            config.getBucket()
-                    );
+                    cacheItemRepository = new CacheItemRepository(credentials, region, endpoint, bucket);
                 }
             }
         }
