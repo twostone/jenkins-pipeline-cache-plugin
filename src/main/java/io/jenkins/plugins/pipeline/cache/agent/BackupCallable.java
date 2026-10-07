@@ -3,7 +3,6 @@ package io.jenkins.plugins.pipeline.cache.agent;
 import hudson.FilePath;
 import hudson.remoting.VirtualChannel;
 import hudson.util.DirScanner;
-import io.jenkins.plugins.pipeline.cache.CacheConfiguration;
 import io.jenkins.plugins.pipeline.cache.s3.S3OutputStream;
 
 import java.io.File;
@@ -20,13 +19,16 @@ public class BackupCallable extends AbstractMasterToAgentS3Callable {
     private final String excludes;
 
     /**
-     * @param config S3 instance and bucket name
+     * @param credentials pre-resolved AWS credentials
+     * @param region AWS region
+     * @param endpoint S3 endpoint (nullable for native AWS S3)
+     * @param bucket S3 bucket name
      * @param key the key used for this backup
      * @param includes Ant-Style pattern to include files (if null then <b>**&#47;*.java</b> is used instead).
      * @param excludes Ant-Style pattern to exclude files (if null then no files are excluded).
      */
-    public BackupCallable(CacheConfiguration config, String key, String includes, String excludes) {
-        super(config);
+    public BackupCallable(ResolvedCredentials credentials, String region, String endpoint, String bucket, String key, String includes, String excludes) {
+        super(credentials, region, endpoint, bucket);
         this.key = key;
         this.includes = includes == null ? "**/*" : includes;
         this.excludes = excludes;

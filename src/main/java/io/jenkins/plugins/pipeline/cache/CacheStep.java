@@ -4,6 +4,7 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.TaskListener;
 import io.jenkins.plugins.pipeline.cache.agent.BackupCallable;
+import io.jenkins.plugins.pipeline.cache.agent.ResolvedCredentials;
 import io.jenkins.plugins.pipeline.cache.agent.RestoreCallable;
 import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
 import org.jenkinsci.plugins.workflow.steps.GeneralNonBlockingStepExecution;
@@ -113,15 +114,21 @@ public class CacheStep extends Step implements Serializable {
             FilePath workspace = getContext().get(FilePath.class);
             FilePath path = workspace.child(step.path);
 
+            // resolve credentials on the controller before dispatching to agents
+            ResolvedCredentials credentials = config.resolveCredentials();
+            String region = config.getRegion();
+            String endpoint = config.getEndpoint();
+            String bucket = config.getBucket();
+
             // restore existing cache
-            path.act(new RestoreCallable(config, step.key, step.restoreKeys)).printInfos(logger);
+            path.act(new RestoreCallable(credentials, region, endpoint, bucket, step.key, step.restoreKeys)).printInfos(logger);
 
             // execute inner-step and save cache afterwards
             getContext().newBodyInvoker().withCallback(new BodyExecutionCallback() {
                 @Override
                 public void onSuccess(StepContext context, Object result) {
                     try {
-                        path.act(new BackupCallable(config, step.key, step.includes, step.excludes)).printInfos(logger);
+                        path.act(new BackupCallable(credentials, region, endpoint, bucket, step.key, step.includes, step.excludes)).printInfos(logger);
                     } catch (Exception x) {
                         context.onFailure(x);
                         return;

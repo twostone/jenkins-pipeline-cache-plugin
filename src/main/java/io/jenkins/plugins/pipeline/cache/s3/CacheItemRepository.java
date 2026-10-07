@@ -1,16 +1,21 @@
 package io.jenkins.plugins.pipeline.cache.s3;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
+import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.model.S3Object;
+import io.jenkins.plugins.pipeline.cache.agent.ResolvedCredentials;
 
 import java.net.URI;
 import java.util.Arrays;
@@ -32,32 +37,57 @@ public class CacheItemRepository implements AutoCloseable {
     private final S3AsyncClient s3Async;
     private final String bucket;
 
+    private static final String DEFAULT_S3_ENDPOINT = "https://s3.amazonaws.com";
+
     public CacheItemRepository(String username, String password, String region, String endpoint, String bucket) {
-        this.s3 = createS3Client(username, password, endpoint, region);
-        this.s3Async = createS3AsyncClient(username, password, endpoint, region);
+        this(StaticCredentialsProvider.create(AwsBasicCredentials.create(username, password)), region, endpoint, bucket);
+    }
+
+    public CacheItemRepository(ResolvedCredentials credentials, String region, String endpoint, String bucket) {
+        this(toCredentialsProvider(credentials), region, endpoint, bucket);
+    }
+
+    public CacheItemRepository(AwsCredentialsProvider credentialsProvider, String region, String endpoint, String bucket) {
+        this.s3 = createS3Client(credentialsProvider, endpoint, region);
+        this.s3Async = createS3AsyncClient(credentialsProvider, endpoint, region);
         this.bucket = bucket;
     }
 
-    protected S3Client createS3Client(String username, String password, String endpoint, String region) {
-        return S3Client.builder()
-                .forcePathStyle(true)
-                .region(Region.of(region))
-                .endpointOverride(URI.create(endpoint))
-                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(username, password)))
-                .build();
+    private static AwsCredentialsProvider toCredentialsProvider(ResolvedCredentials credentials) {
+        if (credentials.hasSessionToken()) {
+            return StaticCredentialsProvider.create(
+                    AwsSessionCredentials.create(credentials.getAccessKeyId(), credentials.getSecretAccessKey(), credentials.getSessionToken()));
+        }
+        return StaticCredentialsProvider.create(
+                AwsBasicCredentials.create(credentials.getAccessKeyId(), credentials.getSecretAccessKey()));
     }
 
-    protected S3AsyncClient createS3AsyncClient(String username, String password, String endpoint, String region) {
-        return S3AsyncClient.builder()
+    private static boolean isCustomEndpoint(String endpoint) {
+        return endpoint != null && !endpoint.isBlank() && !endpoint.equals(DEFAULT_S3_ENDPOINT);
+    }
+
+    protected S3Client createS3Client(AwsCredentialsProvider credentialsProvider, String endpoint, String region) {
+        S3ClientBuilder builder = S3Client.builder()
+                .region(Region.of(region))
+                .credentialsProvider(credentialsProvider);
+        if (isCustomEndpoint(endpoint)) {
+            builder.forcePathStyle(true).endpointOverride(URI.create(endpoint));
+        }
+        return builder.build();
+    }
+
+    protected S3AsyncClient createS3AsyncClient(AwsCredentialsProvider credentialsProvider, String endpoint, String region) {
+        S3AsyncClientBuilder builder = S3AsyncClient.builder()
                 .multipartEnabled(true)
                 .multipartConfiguration(cfg -> cfg
                         .minimumPartSizeInBytes(S3OutputStream.DEFAULT_PART_SIZE)
                         .thresholdInBytes(S3OutputStream.DEFAULT_PART_SIZE))
-                .forcePathStyle(true)
                 .region(Region.of(region))
-                .endpointOverride(URI.create(endpoint))
-                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(username, password)))
-                .build();
+                .credentialsProvider(credentialsProvider);
+        if (isCustomEndpoint(endpoint)) {
+            builder.forcePathStyle(true).endpointOverride(URI.create(endpoint));
+        }
+        return builder.build();
     }
 
     /**
