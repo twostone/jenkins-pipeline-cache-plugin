@@ -21,10 +21,7 @@ import java.util.UUID;
 public class CacheStepTest {
 
     @ClassRule
-    public static MinioContainer minio = new MinioContainer();
-
-    @ClassRule
-    public static MinioMcContainer mc = new MinioMcContainer(minio);
+    public static S3MockContainer s3mock = new S3MockContainer();
 
     @ClassRule
     public static JenkinsRule j = new JenkinsRule();
@@ -43,15 +40,15 @@ public class CacheStepTest {
     public void setupCache() {
         // GIVEN
         String bucket = UUID.randomUUID().toString();
-        mc.createBucket(bucket);
+        s3mock.createBucket(bucket);
 
         // GIVEN
         CacheConfiguration config = CacheConfiguration.get();
-        config.setUsername(minio.accessKey());
-        config.setPassword(Secret.fromString(minio.secretKey()));
+        config.setUsername(s3mock.accessKey());
+        config.setPassword(Secret.fromString(s3mock.secretKey()));
         config.setBucket(bucket);
-        config.setRegion("us-west-1");
-        config.setEndpoint(minio.getExternalAddress());
+        config.setRegion("us-east-1");
+        config.setEndpoint(s3mock.getExternalAddress());
         config.setThreshold(0);
     }
 
