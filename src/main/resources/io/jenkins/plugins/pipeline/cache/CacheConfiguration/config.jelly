@@ -2,7 +2,7 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
     <f:section title="${%Cache Plugin}">
-        <f:entry title="${%Credentials}" field="credentialsId" description="Select a stored 'username with password' credential. Its username is used as the AWS access key ID and its password as the secret access key. Leave unset to use the fields below or the default AWS credential provider chain.">
+        <f:entry title="${%Credentials}" field="credentialsId" description="Select a stored 'username with password' credential (its username becomes the AWS access key ID, its password the secret access key) or a credential from the AWS Credentials plugin. Leave unset to use the fields below or the default AWS credential provider chain.">
             <f:select />
         </f:entry>
 

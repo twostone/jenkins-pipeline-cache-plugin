@@ -25,7 +25,7 @@ jenkins-pipeline-cache::https://github.com/TwoStone/jenkins-pipeline-cache-plugi
 ## Credentials
 The plugin supports three ways to authenticate to the S3 bucket, checked in this order:
 
-1. **Stored Jenkins credential** - select an existing *username with password* credential in the `Credentials` dropdown. The credential's username is used as the S3 access key ID and its password as the secret access key. This is the recommended option, as the credentials are managed centrally in Jenkins.
+1. **Stored Jenkins credential** - select an existing *username with password* credential in the `Credentials` dropdown. The credential's username is used as the S3 access key ID and its password as the secret access key. This is the recommended option, as the credentials are managed centrally in Jenkins. Credentials from the optional [AWS Credentials plugin](https://github.com/jenkinsci/aws-credentials-plugin) are listed in the same dropdown and supported as well — the plugin uses the credential's own resolution (including STS session tokens) in that case.
 2. **Explicit credentials** - set `Username` (aka S3-Access-Key) and `Password` (aka S3-Secret-Key) directly in the configuration.
 3. **Default AWS credential provider chain** - if you configure no credential and no explicit username/password, the plugin resolves credentials from the [default AWS credential provider chain](https://docs.aws.amazon.com/sdkref/latest/guide/standardized-credentials.html) on the controller (e.g. instance role, environment variables, profile files). This is useful when the Jenkins controller runs on a host with an IAM instance profile or equivalent.
 
