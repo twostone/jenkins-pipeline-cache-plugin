@@ -6,12 +6,12 @@
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
         <version>5.7</version>
-        <relativePath />
+        <relativePath/>
     </parent>
 
     <groupId>com.github.twostone</groupId>
     <artifactId>jenkins-pipeline-cache</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.1.0</version>
     <packaging>hpi</packaging>
 
     <properties>
