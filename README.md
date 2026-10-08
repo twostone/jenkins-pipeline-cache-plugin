@@ -100,7 +100,7 @@ Every push and pull request triggers the [CI workflow](.github/workflows/ci.yml)
 Dependency updates are managed automatically by [Renovate](.github/renovate.json): it opens pull requests with updated versions (e.g. the AWS SDK for Java, Testcontainers), which are validated like any other pull request. Version upgrades of the Jenkins core, the Jenkins parent pom, and the plugin [BOM](https://www.jenkins.io/doc/developer/plugin-development/dependency-security/bom/) (which move together when the LTS line changes, e.g. `bom-2.504.x`) are intentionally excluded from automation and applied manually.
 
 ## Benchmarks
-Pull requests automatically run the [benchmark workflow](.github/workflows/benchmark.yml). It executes the benchmark suite on both the base branch and the PR head, then posts a comparison table as a PR comment showing throughput and latency deltas.
+The [benchmark workflow](.github/workflows/benchmark.yml) is run manually (Actions > Benchmark Comparison > Run workflow). It executes the benchmark suite on the selected branch and on a base ref (default `main`), then writes a comparison table with throughput and latency deltas to the run summary.
 
 To run benchmarks locally:
 ```bash
