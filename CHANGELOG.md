@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/twostone/jenkins-pipeline-cache-plugin/compare/v1.1.0...v1.1.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* configure async HTTP client explicitly ([195aaea](https://github.com/twostone/jenkins-pipeline-cache-plugin/commit/195aaea6765a5dd6322f5463c38c3e1beb146340))
+* **release:** gate publish job on releases_created and guard outputs ([294877e](https://github.com/twostone/jenkins-pipeline-cache-plugin/commit/294877eaaa806f654deda95c8d5928298b9c1a66))
+
 ## [1.1.0](https://github.com/twostone/jenkins-pipeline-cache-plugin/compare/v1.0.1-SNAPSHOT...v1.1.0) (2026-10-08)
 
 
