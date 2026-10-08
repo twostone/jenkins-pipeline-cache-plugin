@@ -25,7 +25,7 @@ jobs:
 
   publish:
     needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
+    if: needs.release-please.outputs.releases_created == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -34,6 +34,13 @@ jobs:
       VERSION: ${{ needs.release-please.outputs.major }}.${{ needs.release-please.outputs.minor }}.${{ needs.release-please.outputs.patch }}
 
     steps:
+      - name: Guard against missing release outputs
+        run: |
+          # release-please outputs vary by mode; fail loudly if it reported a
+          # release but left the tag/version outputs empty.
+          [[ -n "$TAG" && -n "$VERSION" ]] || { echo "::error::TAG ($TAG) or VERSION ($VERSION) is empty although releases_created was true"; exit 1; }
+          echo "Publishing $VERSION (tag: $TAG)"
+
       - name: Checkout release tag
         uses: actions/checkout@v4
         with:
