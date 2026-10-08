@@ -5,6 +5,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -78,6 +79,8 @@ public class CacheItemRepository implements AutoCloseable {
 
     protected S3AsyncClient createS3AsyncClient(AwsCredentialsProvider credentialsProvider, String endpoint, String region) {
         S3AsyncClientBuilder builder = S3AsyncClient.builder()
+                // The Netty client is a separate plugin the SDK's discovery classloader (aws-java-sdk2-core) can't see
+                .httpClientBuilder(NettyNioAsyncHttpClient.builder())
                 .multipartEnabled(true)
                 .multipartConfiguration(cfg -> cfg
                         .minimumPartSizeInBytes(S3OutputStream.DEFAULT_PART_SIZE)
