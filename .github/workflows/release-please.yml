@@ -14,6 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      major: ${{ steps.release.outputs.major }}
+      minor: ${{ steps.release.outputs.minor }}
+      patch: ${{ steps.release.outputs.patch }}
+
     steps:
       - name: Run Release Please
         id: release
@@ -75,7 +82,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "$TAG" target/jenkins-pipeline-cache.hpi --filename "jenkins-pipeline-cache-${VERSION}.hpi"
+          cp target/jenkins-pipeline-cache.hpi "target/jenkins-pipeline-cache-${VERSION}.hpi"
+          gh release upload "$TAG" "target/jenkins-pipeline-cache-${VERSION}.hpi" --clobber
 
       - name: Update version in README
         env:
@@ -83,7 +91,11 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # shellcheck disable=SC2016 # git's helper shell must expand the token, not this one
           git config credential.helper '!f() { echo "username=x-access-token"; echo "password=${GITHUB_TOKEN}"; }; f'
+
+          # The tag checkout is a detached HEAD; commit on main instead.
+          git checkout -B main origin/main
 
           sed -i -E "s|https://github.com/TwoStone/jenkins-pipeline-cache-plugin/releases/download/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+\.hpi|https://github.com/TwoStone/jenkins-pipeline-cache-plugin/releases/download/${TAG}/jenkins-pipeline-cache-${VERSION}.hpi|g" README.md
 
