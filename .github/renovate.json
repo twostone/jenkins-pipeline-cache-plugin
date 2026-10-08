@@ -1,0 +1,26 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "schedule": "after 3am and before 6am on Monday",
+  "automerge": false,
+  "packageRules": [
+    {
+      "description": "AWS SDK for Java v2 artifacts share a single version property in the pom",
+      "groupName": "AWS SDK for Java v2",
+      "matchManagers": ["maven"],
+      "matchPackageNames": ["aws-java-sdk2-core", "aws-java-sdk2-s3", "aws-java-sdk2-netty-nio-client"]
+    },
+    {
+      "description": "Testcontainers artifacts share a single version property in the pom",
+      "groupName": "Testcontainers",
+      "matchManagers": ["maven"],
+      "matchPackageNames": ["testcontainers", "junit-jupiter"]
+    },
+    {
+      "description": "Jenkins core, the Jenkins parent pom, and the plugin BOM move together when the LTS track changes (e.g. bom-2.504.x); handled manually",
+      "enabled": false,
+      "matchManagers": ["maven"],
+      "matchPackageNames": ["jenkins-core", "plugin", "bom-2.504.x"]
+    }
+  ]
+}
