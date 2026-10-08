@@ -22,4 +22,4 @@ Jenkins plugin providing the `cache`/`hashFiles` pipeline steps. S3-backed (MinI
 
 - Caches are never overwritten: restoring/upsert skips if the key exists; a failed inner step does not save the cache (documented behavior, not a bug).
 - `includes`/`excludes` are Ant patterns relative to `path`; `hashFiles` patterns are relative to the workspace — easy to mix up.
-- Releases go through the manual GitHub workflow (`release:prepare`/`perform` + tag); don't bump versions or tag locally.
+- Releases are fully automated: Release-Please (`release-please-config.json`) opens a release PR on `main` after conventional commits land; merging it tags (`vX.Y.Z`), creates the GitHub Release, and opens a follow-up PR bumping the pom to the next `-SNAPSHOT`. The tag run (`release-please.yml`) then verifies, deploys to GitHub Packages, and uploads the `.hpi`. Force a version with a `Release-As: X.Y.Z` commit body. Don't bump versions or tag locally.

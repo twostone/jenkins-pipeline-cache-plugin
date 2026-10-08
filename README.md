@@ -97,6 +97,8 @@ As a general advice, sensitive data or data which cannot be restored from somewh
 ## CI
 Every push and pull request triggers the [CI workflow](.github/workflows/ci.yml) which runs `mvn verify` and uploads the `.hpi` artifact.
 
+Dependency updates are managed automatically by [Renovate](.github/renovate.json): it opens pull requests with updated versions (e.g. the AWS SDK for Java, Testcontainers), which are validated like any other pull request. Version upgrades of the Jenkins core, the Jenkins parent pom, and the plugin [BOM](https://www.jenkins.io/doc/developer/plugin-development/dependency-security/bom/) (which move together when the LTS line changes, e.g. `bom-2.504.x`) are intentionally excluded from automation and applied manually.
+
 ## Benchmarks
 Pull requests automatically run the [benchmark workflow](.github/workflows/benchmark.yml). It executes the benchmark suite on both the base branch and the PR head, then posts a comparison table as a PR comment showing throughput and latency deltas.
 
@@ -106,13 +108,15 @@ mvn -B verify -Pbenchmarks
 ```
 
 ## Releasing
-Releases are performed via the [release workflow](.github/workflows/release.yml) which is triggered manually from the Actions tab.
+Releases are automated via [Release-Please](https://github.com/googleapis/release-please), configured in [release-please-config.json](../release-please-config.json):
 
-1. Go to **Actions → Release → Run workflow**
-2. Optionally specify a release version and next development version
-3. The workflow runs tests, executes `mvn release:prepare release:perform`, creates a Git tag, and publishes a GitHub Release with the `.hpi` artifact
+1. As soon as the next commit after the last release carries a conventional commit type (`fix:`, `feat:`, `docs:`, ...), Release-Please opens a release pull request on `main` (labeled `autorelease: pending`) which keeps the `pom.xml` version bump and `CHANGELOG.md` in sync as more commits land.
+2. Merging that pull request cuts the release: Release-Please tags the commit (`vX.Y.Z`), creates the GitHub Release with generated notes, and opens a follow-up pull request that bumps the pom to the next `-SNAPSHOT` version.
+3. The [release workflow](.github/workflows/release-please.yml) then runs the full test suite on the tagged commit, deploys the artifacts to GitHub Packages (Maven coordinates `com.github.twostone:jenkins-pipeline-cache:X.Y.Z`), and uploads the `.hpi` to the GitHub Release.
 
-A **dry run** option is available to validate the release process without pushing any tags or artifacts.
+To force a specific version, merge any commit on `main` whose body contains `Release-As: X.Y.Z`.
+
+Old releases use the `jenkins-pipeline-cache-X.Y.Z` tag format; their download links remain valid.
 
 # Further reading
 * [CacheStep.java](./src/main/java/io/jenkins/plugins/pipeline/cache/CacheStep.java) - implements the `cache` pipeline step
