@@ -5,6 +5,7 @@ import software.amazon.awssdk.core.async.BlockingOutputStreamAsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
+import software.amazon.awssdk.utils.CancellableOutputStream;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -34,7 +35,7 @@ public class S3OutputStream extends OutputStream {
     public static final long DEFAULT_PART_SIZE = 1024L * 1024 * 10;
 
     private final CompletableFuture<PutObjectResponse> uploadFuture;
-    private final OutputStream delegate;
+    private final CancellableOutputStream delegate;
     private boolean open = true;
     private long bytesWritten;
 
@@ -92,6 +93,23 @@ public class S3OutputStream extends OutputStream {
                 throw ioe;
             }
             throw new IOException("Upload to S3 failed", cause);
+        }
+    }
+
+    /**
+     * Aborts the upload so that no object is created. Subsequent calls to {@link #close()} are no-ops.
+     */
+    public synchronized void abort() {
+        if (!open) {
+            return;
+        }
+        open = false;
+        delegate.cancel();
+        // the upload fails now, which is expected
+        try {
+            uploadFuture.join();
+        } catch (RuntimeException e) {
+            // expected: cancel() fails the in-flight upload
         }
     }
 
