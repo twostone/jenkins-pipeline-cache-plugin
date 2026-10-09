@@ -3,6 +3,12 @@ name: Release
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to (re-)publish, e.g. v1.1.2'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -11,6 +17,7 @@ permissions:
 
 jobs:
   release-please:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -32,26 +39,25 @@ jobs:
 
   publish:
     needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    # always() lets this run on workflow_dispatch, where release-please is skipped.
+    if: always() && (github.event_name == 'workflow_dispatch' || needs.release-please.outputs.releases_created == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     env:
-      TAG: ${{ needs.release-please.outputs.tag_name }}
-      VERSION: ${{ needs.release-please.outputs.major }}.${{ needs.release-please.outputs.minor }}.${{ needs.release-please.outputs.patch }}
+      TAG: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
 
     steps:
-      - name: Guard against missing release outputs
+      - name: Resolve version from tag
         run: |
-          # release-please outputs vary by mode; fail loudly if it reported a
-          # release but left the tag/version outputs empty.
-          [[ -n "$TAG" && -n "$VERSION" ]] || { echo "::error::TAG ($TAG) or VERSION ($VERSION) is empty although releases_created was true"; exit 1; }
-          echo "Publishing $VERSION (tag: $TAG)"
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::TAG '$TAG' is not of the form vX.Y.Z"; exit 1; }
+          echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
+          echo "Publishing ${TAG#v} (tag: $TAG)"
 
       - name: Checkout release tag
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.release-please.outputs.tag_name }}
+          ref: ${{ env.TAG }}
           fetch-depth: 0
 
       - name: Set up JDK 21
@@ -90,7 +96,15 @@ jobs:
       - name: Update version in README
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Don't point the README at an older release when re-publishing one.
+          latest=$(gh release view --json tagName -q .tagName)
+          if [[ "$latest" != "$TAG" ]]; then
+            echo "::notice::$TAG is not the latest release ($latest); skipping README update"
+            exit 0
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           # shellcheck disable=SC2016 # git's helper shell must expand the token, not this one
