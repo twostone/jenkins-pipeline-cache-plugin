@@ -2,10 +2,13 @@ package io.jenkins.plugins.pipeline.cache;
 
 import hudson.Extension;
 import hudson.FilePath;
+import hudson.model.Computer;
 import hudson.model.TaskListener;
+import io.jenkins.plugins.pipeline.cache.agent.AbstractMasterToAgentS3Callable;
 import io.jenkins.plugins.pipeline.cache.agent.BackupCallable;
 import io.jenkins.plugins.pipeline.cache.agent.ResolvedCredentials;
 import io.jenkins.plugins.pipeline.cache.agent.RestoreCallable;
+import io.jenkins.plugins.pipeline.cache.s3.CacheItemRepository;
 import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
 import org.jenkinsci.plugins.workflow.steps.GeneralNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.Step;
@@ -20,6 +23,8 @@ import java.io.PrintStream;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Handles 'cache' step executions.<br><br>
@@ -35,6 +40,7 @@ import java.util.Set;
 public class CacheStep extends Step implements Serializable {
 
     private static final long serialVersionUID = 1L;
+    private static final Logger LOGGER = Logger.getLogger(CacheStep.class.getName());
 
     /**
      * (required) Path to the folder (absolute or relative to the workspace) which should be cached (e.g. <i>$HOME/.m2/repository</i>).
@@ -121,7 +127,15 @@ public class CacheStep extends Step implements Serializable {
             String bucket = config.getBucket();
 
             // restore existing cache
-            path.act(new RestoreCallable(credentials, region, endpoint, bucket, step.key, step.restoreKeys)).printInfos(logger);
+            AbstractMasterToAgentS3Callable.Result restoreResult =
+                    path.act(new RestoreCallable(credentials, region, endpoint, bucket, step.key, step.restoreKeys));
+            restoreResult.printInfos(logger);
+
+            String restoredKey = restoreResult.getRestoredKey();
+            if (restoredKey != null) {
+                // the copy is server-side, so run it on the controller without delaying the build
+                Computer.threadPoolForRemoting.submit(() -> updateLastAccess(credentials, region, endpoint, bucket, restoredKey));
+            }
 
             // execute inner-step and save cache afterwards
             getContext().newBodyInvoker().withCallback(new BodyExecutionCallback() {
@@ -144,6 +158,14 @@ public class CacheStep extends Step implements Serializable {
             }).start();
 
             return false;
+        }
+
+        private static void updateLastAccess(ResolvedCredentials credentials, String region, String endpoint, String bucket, String key) {
+            try (CacheItemRepository repository = new CacheItemRepository(credentials, region, endpoint, bucket)) {
+                repository.updateLastAccess(key);
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, e, () -> "Last access timestamp not updated (" + key + ")");
+            }
         }
 
     }

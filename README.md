@@ -91,6 +91,8 @@ As a general advice, sensitive data or data which cannot be restored from somewh
 * the S3 object contains metadata
   * CREATED - Unix time is ms when the cache was created
   * LAST_ACCESS - Unix time is ms when the cache was accessed last
+* after a restore, the controller updates LAST_ACCESS in the background by copying the object onto itself (objects > 10 MB are copied in parts), so the controller needs access to S3 and the storage must support `UploadPartCopy`
+* an `AbortIncompleteMultipartUpload` lifecycle rule on the bucket is recommended to clean up interrupted uploads and copies
 
 # Development
 

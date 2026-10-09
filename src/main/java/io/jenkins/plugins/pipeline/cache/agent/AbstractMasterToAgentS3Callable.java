@@ -53,7 +53,16 @@ public abstract class AbstractMasterToAgentS3Callable extends MasterToSlaveFileC
         public Result build() {
             Result build = new Result();
             build.infos = new ArrayList<>(result.infos);
+            build.restoredKey = result.restoredKey;
             return build;
+        }
+
+        /**
+         * Sets the key of the cache which has been restored.
+         */
+        public ResultBuilder withRestoredKey(String key) {
+            result.restoredKey = key;
+            return this;
         }
 
         /**
@@ -78,6 +87,14 @@ public abstract class AbstractMasterToAgentS3Callable extends MasterToSlaveFileC
         private static final long serialVersionUID = 1L;
 
         private List<String> infos = new ArrayList<>();
+        private String restoredKey;
+
+        /**
+         * Returns the key of the restored cache or null if nothing was restored.
+         */
+        public String getRestoredKey() {
+            return restoredKey;
+        }
 
         /**
          * Adds a given info message to the result.

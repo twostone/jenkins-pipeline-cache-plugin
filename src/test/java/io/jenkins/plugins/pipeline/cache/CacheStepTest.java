@@ -14,6 +14,8 @@ import org.jvnet.hudson.test.JenkinsRule;
 
 import java.util.UUID;
 
+import static org.junit.Assert.fail;
+
 /**
  * Checks that the cache step works as expected in pipelines. Each test starts with an empty bucket and the cache is also registered to
  * Jenkins.
@@ -77,6 +79,35 @@ public class CacheStepTest {
         j.assertLogContains("Cache restored successfully (1234)", b2);
         j.assertLogContains("expected-content", b2);
         j.assertLogContains("Cache not saved (1234 already exists)", b2);
+    }
+
+    @Test
+    public void testRestoreUpdatesLastAccess() throws Exception {
+        // GIVEN
+        String bucket = CacheConfiguration.get().getBucket();
+        executeWorkflow(createWorkflow("node {\n" +
+                "  cache(path: '.', key: 'last-access') {\n" +
+                "    sh 'echo content > file'\n" +
+                "  }\n" +
+                "}"));
+        s3mock.resetLastAccess(bucket, "last-access");
+
+        // WHEN
+        WorkflowRun b = executeWorkflow(createWorkflow("node {\n" +
+                "  cache(path: '.', key: 'last-access') {\n" +
+                "    sh 'cat file'\n" +
+                "  }\n" +
+                "}"));
+
+        // THEN
+        j.assertBuildStatusSuccess(b);
+        long deadline = System.currentTimeMillis() + 10_000;
+        while ("0".equals(s3mock.headObject(bucket, "last-access").metadata().get("last_access"))) {
+            if (System.currentTimeMillis() > deadline) {
+                fail("last access timestamp was not updated");
+            }
+            Thread.sleep(100);
+        }
     }
 
     @Test
