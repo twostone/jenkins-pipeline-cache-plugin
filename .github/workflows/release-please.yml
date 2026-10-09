@@ -76,6 +76,8 @@ jobs:
         run: mvn -B verify
 
       - name: Deploy to GitHub Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: mvn -B -ntp deploy -DskipTests -Dmaven.javadoc.failOnError=false
 
       - name: Upload .hpi to the GitHub Release
