@@ -60,9 +60,19 @@ public class BackupCallable extends AbstractMasterToAgentS3Callable {
         // do backup — stream tar archive directly to S3
         long start = System.nanoTime();
         long uploadedBytes;
-        try (S3OutputStream outToS3 = cacheItemRepository().createObjectOutputStream(key)) {
+        boolean success = false;
+        S3OutputStream outToS3 = cacheItemRepository().createObjectOutputStream(key);
+        try {
             new FilePath(path).tar(outToS3, new DirScanner.Glob(includes, excludes, false));
             uploadedBytes = outToS3.getBytesWritten();
+            success = true;
+        } finally {
+            // abort on failure, otherwise the partial tar would be committed
+            if (success) {
+                outToS3.close();
+            } else {
+                outToS3.abort();
+            }
         }
 
         return new ResultBuilder()
