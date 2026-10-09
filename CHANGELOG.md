@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.2](https://github.com/twostone/jenkins-pipeline-cache-plugin/compare/v1.1.1...v1.1.2) (2026-10-09)
+
+
+### Bug Fixes
+
+* **backup:** abort upload instead of saving partial cache on failure ([d5b8ee4](https://github.com/twostone/jenkins-pipeline-cache-plugin/commit/d5b8ee485bb7616beef49cd2cd2bd650ab1d25a2))
+* **restore:** update last access with multipart copy in the background ([eaadf6a](https://github.com/twostone/jenkins-pipeline-cache-plugin/commit/eaadf6ab5051e3f2a5f2b528403a669871afea48))
+
 ## [1.1.1](https://github.com/twostone/jenkins-pipeline-cache-plugin/compare/v1.1.0...v1.1.1) (2026-10-08)
 
 
