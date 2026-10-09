@@ -50,10 +50,8 @@ public class RestoreCallable extends AbstractMasterToAgentS3Callable {
             new FilePath(path).untarFrom(s3Object, FilePath.TarCompression.NONE);
         }
 
-        // update last access timestamp
-        cacheItemRepository().updateLastAccess(key);
-
         return new ResultBuilder()
+                .withRestoredKey(key)
                 .withInfo(format("Cache restored successfully (%s)", key))
                 .withInfo(performanceString(contentLength, startNanoTime))
                 .build();

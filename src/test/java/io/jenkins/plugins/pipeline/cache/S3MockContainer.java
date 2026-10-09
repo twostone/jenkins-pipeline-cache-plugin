@@ -4,12 +4,17 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Testcontainer exposing an S3-compatible endpoint via {@code adobe/s3mock}.
@@ -61,6 +66,35 @@ public class S3MockContainer extends GenericContainer<S3MockContainer> {
                 return false;
             }
             throw e;
+        }
+    }
+
+    /**
+     * Stores an object with the given content and user metadata.
+     */
+    public void putObject(String bucket, String key, byte[] content, Map<String, String> metadata) {
+        try (S3Client client = client()) {
+            client.putObject(p -> p.bucket(bucket).key(key).metadata(metadata), RequestBody.fromBytes(content));
+        }
+    }
+
+    public HeadObjectResponse headObject(String bucket, String key) {
+        try (S3Client client = client()) {
+            return client.headObject(h -> h.bucket(bucket).key(key));
+        }
+    }
+
+    /**
+     * Sets the last access metadata of an object to 0, so that the next update is not skipped by the time threshold.
+     */
+    public void resetLastAccess(String bucket, String key) {
+        try (S3Client client = client()) {
+            Map<String, String> metadata = new HashMap<>(client.headObject(h -> h.bucket(bucket).key(key)).metadata());
+            metadata.put("last_access", "0");
+            client.copyObject(c -> c.sourceBucket(bucket).sourceKey(key)
+                    .destinationBucket(bucket).destinationKey(key)
+                    .metadataDirective(MetadataDirective.REPLACE)
+                    .metadata(metadata));
         }
     }
 

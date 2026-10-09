@@ -146,7 +146,8 @@ public class CacheItemRepository implements AutoCloseable {
 
     /**
      * Updates the last access timestamp of a given cache item by key. <b>Note: As a side effect this also changes the last modification
-     * timestamp, which means that last modification and last access can be considered as equals</b>
+     * timestamp, which means that last modification and last access can be considered as equals</b>. Large objects are copied in parts,
+     * since a single copy is limited to 5 GiB.
      */
     public void updateLastAccess(String key) {
         HeadObjectResponse head = s3.headObject(builder -> builder.bucket(bucket).key(key));
@@ -158,13 +159,13 @@ public class CacheItemRepository implements AutoCloseable {
         if (currentTime - lastAccessTime > TIME_THRESHOLD) {
             metadata.put(LAST_ACCESS, Long.toString(currentTime));
 
-            s3.copyObject(builder ->
+            s3Async.copyObject(builder ->
                     builder.sourceBucket(bucket)
                             .sourceKey(key)
                             .destinationBucket(bucket)
                             .destinationKey(key)
                             .metadataDirective(MetadataDirective.REPLACE)
-                            .metadata(metadata));
+                            .metadata(metadata)).join();
         }
     }
 
