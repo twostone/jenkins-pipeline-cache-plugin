@@ -22,7 +22,7 @@
         <!-- dependency versions -->
         <jenkins.version>2.504.1</jenkins.version>
         <aws-java-sdk2.version>2.42.33-70.vd69c0763fa_60</aws-java-sdk2.version>
-        <testcontainers.version>1.21.0</testcontainers.version>
+        <testcontainers.version>1.21.4</testcontainers.version>
     </properties>
 
     <name>Jenkins Pipeline Cache</name>
