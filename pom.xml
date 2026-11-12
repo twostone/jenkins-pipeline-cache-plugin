@@ -20,7 +20,7 @@
         <java.level>21</java.level>
 
         <!-- dependency versions -->
-        <jenkins.version>2.504.1</jenkins.version>
+        <jenkins.version>2.504.3</jenkins.version>
         <aws-java-sdk2.version>2.56.0-80.v7a_7cdf2f4dc8</aws-java-sdk2.version>
         <testcontainers.version>1.21.4</testcontainers.version>
     </properties>
@@ -34,7 +34,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.504.x</artifactId>
-                <version>5208.vb_69e9d049f68</version>
+                <version>5983.v443959746f1f</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
