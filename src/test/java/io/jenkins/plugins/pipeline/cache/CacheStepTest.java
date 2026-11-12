@@ -5,41 +5,42 @@ import hudson.util.Secret;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.jvnet.hudson.test.BuildWatcher;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.BuildWatcherExtension;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.UUID;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Checks that the cache step works as expected in pipelines. Each test starts with an empty bucket and the cache is also registered to
  * Jenkins.
  */
+@Testcontainers
+@WithJenkins
 public class CacheStepTest {
 
-    @ClassRule
-    public static S3MockContainer s3mock = new S3MockContainer();
+    @Container
+    static final S3MockContainer s3mock = new S3MockContainer();
 
-    @ClassRule
-    public static JenkinsRule j = new JenkinsRule();
+    @RegisterExtension
+    static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
 
-    @ClassRule
-    public static BuildWatcher buildWatcher = new BuildWatcher();
+    private JenkinsRule j;
 
-    @BeforeClass
-    public static void setupExecutor() throws Exception {
+    @BeforeEach
+    public void setUp(JenkinsRule r) throws Exception {
+        j = r;
         // execute build jobs on a dedicated agent node
         j.jenkins.setNumExecutors(0);
         j.createSlave(true);
-    }
 
-    @Before
-    public void setupCache() {
         // GIVEN
         String bucket = UUID.randomUUID().toString();
         s3mock.createBucket(bucket);

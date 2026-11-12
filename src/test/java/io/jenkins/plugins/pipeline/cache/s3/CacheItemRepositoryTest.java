@@ -1,6 +1,6 @@
 package io.jenkins.plugins.pipeline.cache.s3;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class CacheItemRepositoryTest {
 

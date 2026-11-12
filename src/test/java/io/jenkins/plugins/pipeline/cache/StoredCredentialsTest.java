@@ -8,9 +8,10 @@ import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import io.jenkins.plugins.pipeline.cache.agent.ResolvedCredentials;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -21,15 +22,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@WithJenkins
 public class StoredCredentialsTest {
 
-    @Rule
-    public JenkinsRule j = new JenkinsRule();
+    private JenkinsRule j;
+
+    @BeforeEach
+    public void setUp(JenkinsRule r) {
+        j = r;
+    }
 
     private void addCredential(Credentials... credentials) {
         Map<Domain, List<Credentials>> map = new HashMap<>();
@@ -105,7 +111,7 @@ public class StoredCredentialsTest {
         // THEN
         assertEquals("AKIA_AWS", resolved.getAccessKeyId());
         assertEquals("aws-secret", resolved.getSecretAccessKey());
-        assertFalse("no session token expected", resolved.hasSessionToken());
+        assertFalse(resolved.hasSessionToken(), "no session token expected");
     }
 
     @Test
@@ -135,13 +141,9 @@ public class StoredCredentialsTest {
         config.setCredentialsId(credential.getId());
 
         // WHEN / THEN
-        try {
-            config.resolveCredentials();
-            fail("expected IllegalStateException for unsupported credential type");
-        } catch (IllegalStateException e) {
-            assertEquals("Stored credential 'unsupported' is not supported, expected a 'username with password' credential or an AWS credential",
-                    e.getMessage());
-        }
+        IllegalStateException e = assertThrows(IllegalStateException.class, config::resolveCredentials);
+        assertEquals("Stored credential 'unsupported' is not supported, expected a 'username with password' credential or an AWS credential",
+                e.getMessage());
     }
 
     @Test
@@ -151,12 +153,8 @@ public class StoredCredentialsTest {
         config.setCredentialsId("does-not-exist");
 
         // WHEN / THEN
-        try {
-            config.resolveCredentials();
-            fail("expected IllegalStateException for unknown credential id");
-        } catch (IllegalStateException e) {
-            assertEquals("Stored credential 'does-not-exist' not found", e.getMessage());
-        }
+        IllegalStateException e = assertThrows(IllegalStateException.class, config::resolveCredentials);
+        assertEquals("Stored credential 'does-not-exist' not found", e.getMessage());
     }
 
     @Test
@@ -175,7 +173,7 @@ public class StoredCredentialsTest {
         List<String> values = options.stream().map(o -> o.value).toList();
         assertTrue(values.contains("username-password"));
         assertTrue(values.contains("aws-static"));
-        assertFalse("unsupported types must not be offered", values.contains("unsupported"));
+        assertFalse(values.contains("unsupported"), "unsupported types must not be offered");
     }
 
     /**

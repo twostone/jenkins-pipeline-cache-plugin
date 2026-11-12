@@ -5,11 +5,14 @@ import hudson.util.StreamTaskListener;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.jvnet.hudson.test.BuildWatcher;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.BuildWatcherExtension;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,21 +25,23 @@ import static org.hamcrest.Matchers.is;
 /**
  * Checks that the cache eviction works as expected. Each test starts with an empty bucket.
  */
+@Testcontainers
+@WithJenkins
 public class CacheCleanupTaskTest {
 
-    @ClassRule
-    public static S3MockContainer s3mock = new S3MockContainer();
+    @Container
+    static final S3MockContainer s3mock = new S3MockContainer();
 
-    @ClassRule
-    public static BuildWatcher buildWatcher = new BuildWatcher();
+    @RegisterExtension
+    static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
 
-    @ClassRule
-    public static JenkinsRule j = new JenkinsRule();
+    private JenkinsRule j;
 
     private String bucket;
 
-    @Before
-    public void setupJenkinsCache() {
+    @BeforeEach
+    public void setUp(JenkinsRule r) {
+        j = r;
         // GIVEN
         bucket = UUID.randomUUID().toString();
         s3mock.createBucket(bucket);

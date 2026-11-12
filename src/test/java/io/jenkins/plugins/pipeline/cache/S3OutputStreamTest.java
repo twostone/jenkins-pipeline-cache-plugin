@@ -2,27 +2,29 @@ package io.jenkins.plugins.pipeline.cache;
 
 import io.jenkins.plugins.pipeline.cache.s3.CacheItemRepository;
 import io.jenkins.plugins.pipeline.cache.s3.S3OutputStream;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.UUID;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Verifies that an aborted upload does not create an object, while a closed upload does.
  */
+@Testcontainers
 public class S3OutputStreamTest {
 
-    @ClassRule
-    public static S3MockContainer s3mock = new S3MockContainer();
+    @Container
+    static final S3MockContainer s3mock = new S3MockContainer();
 
     private String bucket;
     private CacheItemRepository repository;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         bucket = UUID.randomUUID().toString();
         s3mock.createBucket(bucket);

@@ -1,10 +1,11 @@
 package io.jenkins.plugins.pipeline.cache.s3;
 
 import io.jenkins.plugins.pipeline.cache.S3MockContainer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 
 import java.util.Map;
@@ -14,27 +15,28 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Checks that updating the last access timestamp works for objects below and above the multipart threshold.
  */
+@Testcontainers
 public class CacheItemRepositoryLastAccessTest {
 
-    @ClassRule
-    public static S3MockContainer s3mock = new S3MockContainer();
+    @Container
+    static final S3MockContainer s3mock = new S3MockContainer();
 
     private String bucket;
     private CacheItemRepository repository;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         bucket = UUID.randomUUID().toString();
         s3mock.createBucket(bucket);
         repository = new CacheItemRepository(s3mock.accessKey(), s3mock.secretKey(), "us-east-1", s3mock.getExternalAddress(), bucket);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         repository.close();
     }

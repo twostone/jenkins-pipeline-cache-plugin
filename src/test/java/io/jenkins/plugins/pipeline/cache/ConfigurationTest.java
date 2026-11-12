@@ -2,30 +2,30 @@ package io.jenkins.plugins.pipeline.cache;
 
 
 import org.htmlunit.html.HtmlForm;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.JenkinsSessionRule;
+import org.jvnet.hudson.test.junit.jupiter.JenkinsSessionExtension;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class ConfigurationTest {
 
-    @Rule
-    public JenkinsSessionRule rule = new JenkinsSessionRule();
+    @RegisterExtension
+    JenkinsSessionExtension rule = new JenkinsSessionExtension();
 
     @Test
     public void testConfiguration() throws Throwable {
         // WHEN
         rule.then(r -> {
             // THEN
-            assertNull("should be empty initially", CacheConfiguration.get().getUsername());
-            assertNull("should be empty initially", CacheConfiguration.get().getPassword());
-            assertNull("should be empty initially", CacheConfiguration.get().getBucket());
-            assertNull("should be empty initially", CacheConfiguration.get().getRegion());
-            assertNull("should be empty initially", CacheConfiguration.get().getEndpoint());
-            assertEquals(0, CacheConfiguration.get().getThreshold());
+            assertNull(CacheConfiguration.get().getUsername(), "should be empty initially");
+            assertNull(CacheConfiguration.get().getPassword(), "should be empty initially");
+            assertNull(CacheConfiguration.get().getBucket(), "should be empty initially");
+            assertNull(CacheConfiguration.get().getRegion(), "should be empty initially");
+            assertNull(CacheConfiguration.get().getEndpoint(), "should be empty initially");
+            assertEquals(0L, CacheConfiguration.get().getThreshold());
 
             // WHEN
             try (JenkinsRule.WebClient c = r.createWebClient()) {
@@ -40,23 +40,23 @@ public class ConfigurationTest {
             }
 
             // THEN
-            assertEquals("should be editable", "alice", CacheConfiguration.get().getUsername());
-            assertEquals("should be editable", "secret", CacheConfiguration.get().getPassword().getPlainText());
-            assertEquals("should be editable", "blue", CacheConfiguration.get().getBucket());
-            assertEquals("should be editable", "dc1", CacheConfiguration.get().getRegion());
-            assertEquals("should be editable", "http://localhost:9000", CacheConfiguration.get().getEndpoint());
-            assertEquals("should be editable", 777, CacheConfiguration.get().getThreshold());
+            assertEquals("alice", CacheConfiguration.get().getUsername(), "should be editable");
+            assertEquals("secret", CacheConfiguration.get().getPassword().getPlainText(), "should be editable");
+            assertEquals("blue", CacheConfiguration.get().getBucket(), "should be editable");
+            assertEquals("dc1", CacheConfiguration.get().getRegion(), "should be editable");
+            assertEquals("http://localhost:9000", CacheConfiguration.get().getEndpoint(), "should be editable");
+            assertEquals(777L, CacheConfiguration.get().getThreshold(), "should be editable");
 
         });
         // WHEN
         rule.then(r -> {
             // THEN
-            assertEquals("should be still there after restart of Jenkins", "alice", CacheConfiguration.get().getUsername());
-            assertEquals("should be still there after restart of Jenkins", "secret", CacheConfiguration.get().getPassword().getPlainText());
-            assertEquals("should be still there after restart of Jenkins", "blue", CacheConfiguration.get().getBucket());
-            assertEquals("should be still there after restart of Jenkins", "dc1", CacheConfiguration.get().getRegion());
-            assertEquals("should be still there after restart of Jenkins", "http://localhost:9000", CacheConfiguration.get().getEndpoint());
-            assertEquals("should be still there after restart of Jenkins", 777, CacheConfiguration.get().getThreshold());
+            assertEquals("alice", CacheConfiguration.get().getUsername(), "should be still there after restart of Jenkins");
+            assertEquals("secret", CacheConfiguration.get().getPassword().getPlainText(), "should be still there after restart of Jenkins");
+            assertEquals("blue", CacheConfiguration.get().getBucket(), "should be still there after restart of Jenkins");
+            assertEquals("dc1", CacheConfiguration.get().getRegion(), "should be still there after restart of Jenkins");
+            assertEquals("http://localhost:9000", CacheConfiguration.get().getEndpoint(), "should be still there after restart of Jenkins");
+            assertEquals(777L, CacheConfiguration.get().getThreshold(), "should be still there after restart of Jenkins");
         });
     }
 
