@@ -21,7 +21,7 @@
 
         <!-- dependency versions -->
         <jenkins.version>2.504.1</jenkins.version>
-        <aws-java-sdk2.version>2.42.33-70.vd69c0763fa_60</aws-java-sdk2.version>
+        <aws-java-sdk2.version>2.56.0-80.v7a_7cdf2f4dc8</aws-java-sdk2.version>
         <testcontainers.version>1.21.4</testcontainers.version>
     </properties>
 
