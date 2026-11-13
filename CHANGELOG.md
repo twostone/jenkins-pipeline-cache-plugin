@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.3](https://github.com/twostone/jenkins-pipeline-cache-plugin/compare/v1.1.2...v1.1.3) (2026-11-13)
+
+
+### Bug Fixes
+
+* avoid closing shared default AWS credentials provider ([418894c](https://github.com/twostone/jenkins-pipeline-cache-plugin/commit/418894c5e90d32b67b9a84882a5970db9ef59df4))
+* **deps:** update aws-java-sdk2.version to v2.56.0-80.v7a_7cdf2f4dc8 ([b8c77c8](https://github.com/twostone/jenkins-pipeline-cache-plugin/commit/b8c77c877cac312c4887a1472ab9c7f67e62bab9))
+* **deps:** update dependency io.jenkins.tools.bom:bom-2.504.x to v5208 ([c22a0e3](https://github.com/twostone/jenkins-pipeline-cache-plugin/commit/c22a0e3789d1ff1566c28e3b91fcece45e944adb))
+* **deps:** update dependency org.jenkins-ci.plugins:plugin to v5.2102.v5f5fe09fccf1 ([388616a](https://github.com/twostone/jenkins-pipeline-cache-plugin/commit/388616a1dd1e08fc306586a871d139b243b59eaf))
+* **deps:** update dependency org.jenkins-ci.plugins:plugin to v6 ([fcf35e9](https://github.com/twostone/jenkins-pipeline-cache-plugin/commit/fcf35e9a6be58f16a607caf9d19c302de88dab3c))
+* **release:** add GITHUB_TOKEN environment variable for deployment step ([c4593ec](https://github.com/twostone/jenkins-pipeline-cache-plugin/commit/c4593ec2998b7f9247db67bd196c969be46b6d19))
+* **release:** enhance workflow for manual tag publishing and version validation ([4888df9](https://github.com/twostone/jenkins-pipeline-cache-plugin/commit/4888df96eba6906a1408172a0c646427f9c6a784))
+
 ## [1.1.2](https://github.com/twostone/jenkins-pipeline-cache-plugin/compare/v1.1.1...v1.1.2) (2026-10-09)
 
 
